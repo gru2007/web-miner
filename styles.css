@@ -1,0 +1,68 @@
+body {
+    text-align: center;
+    padding-top: 50px;
+    font: 15px arial, sans-serif;
+    color: #111;
+    line-height: 1.4;
+}
+
+a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #1a73e8;
+    text-decoration: underline;
+}
+
+ul li {
+    margin-bottom: 8px;
+}
+
+h2 {
+    padding-top: 20px;
+}
+
+h3 {
+    padding-top: 12px;
+}
+
+#app {
+    margin: auto;
+    width: 300px;
+    box-sizing: border-box;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #3c5988;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #426094;
+}
+
+#header {
+    line-height: 1.5;
+}
+
+#footer {
+    line-height: 1.2;
+}
+.small {
+    font-size: 13px;
+    color: #494949;
+}
