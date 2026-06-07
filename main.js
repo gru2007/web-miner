@@ -40,7 +40,7 @@ async function initializeJettonGiver(jettonGiverAddress) {
 }
 
 const extraSmallGivers = [
-    'kQCXLG7XJ3v0KshgzPEWDcUVQe4-bSQGX95jozkw0dcqVGxk',
+    'kQBw0uhfFMRwD0r4F20Ud6HbniW3H5Hm9Uf3JkzWnIfKhY3F',
 ]
 
 const getRandomGiver = () => {
