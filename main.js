@@ -1,5 +1,5 @@
 async function initializeTon() {
-    const endpoint = await tonAccess.getHttpEndpoint({network: "testnet"});
+    const endpoint = await tonAccess.getHttpEndpoint({network: "mainnet"});
     window.client = new tonton.TonClient({ endpoint: endpoint });
 }
 
@@ -13,8 +13,8 @@ const i18n = {
     ru: {
         addressLabel: 'Ваш адрес:',
         title: '$ZKGRM Майнинг',
-        description: 'Здесь вы можете протестировать майнинг $ZKGRM в TestNet.',
-        placeholderSeed: 'Введите Сид-Фразу в TestNet',
+        description: 'Здесь вы можете протестировать майнинг $ZKGRM',
+        placeholderSeed: 'Введите Сид-Фразу',
         buttonConnect: 'Начать Майнинг',
         secureLabel: 'Secure Min2 / Безопасный',
         secureDescription: 'proof привязан к получателю. Mempool copy не может украсть награду.',
@@ -34,8 +34,8 @@ const i18n = {
     en: {
         addressLabel: 'Your address:',
         title: '$ZKGRM Mining',
-        description: 'Test $ZKGRM mining on TestNet.',
-        placeholderSeed: 'Enter seed phrase in TestNet',
+        description: 'Test $ZKGRM mining',
+        placeholderSeed: 'Enter seed phrase',
         buttonConnect: 'Start Mining',
         secureLabel: 'Secure Min2',
         secureDescription: 'Proof is bound to your reward address. Mempool copy cannot steal it.',
@@ -83,7 +83,7 @@ async function initializeWallet(seedphrase) {
     console.log('Wallet address:', userWallet.address.toString());
 
     // set address to view
-    document.getElementById('address').innerHTML = `${t.addressLabel} <a href="https://testnet.tonscan.org/address/${userWallet.address.toString()}" 
+    document.getElementById('address').innerHTML = `${t.addressLabel} <a href="https://tonscan.org/address/${userWallet.address.toString()}" 
                 target="_blank">${wrapAddress(userWallet.address)}</a>`;
 
 }
