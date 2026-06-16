@@ -96,7 +96,7 @@ async function initializeJettonGiver(jettonGiverAddress) {
 }
 
 const extraSmallGivers = [
-    'kQBXxdauA2wWf07mkA-cQzL7msq6M43lbXvz0ojoYvMptp0C'
+    'EQAYcmiYpjYbdN62M9ZuyiwxZk8ijqeZR-tfwki_jZo8qTM0'
 ]
 
 const isKnownGiver = (address) => extraSmallGivers.includes(address);
