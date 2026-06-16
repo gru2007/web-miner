@@ -8,6 +8,53 @@ const wrapAddress = (address) => {
     return `${addressString.slice(0, 6)}...${addressString.slice(-6)}`;
 }
 
+const pageLang = document.documentElement.lang === 'en' ? 'en' : 'ru';
+const i18n = {
+    ru: {
+        addressLabel: 'Ваш адрес:',
+        title: '$ZKGRM Майнинг',
+        description: 'Здесь вы можете протестировать майнинг $ZKGRM в TestNet.',
+        placeholderSeed: 'Введите Сид-Фразу в TestNet',
+        buttonConnect: 'Начать Майнинг',
+        secureLabel: 'Secure Min2 / Безопасный',
+        secureDescription: 'proof привязан к получателю. Mempool copy не может украсть награду.',
+        legacyLabel: 'Legacy Mine / Старый',
+        legacyDescription: 'Совместим со старым $GRAM-style opcode, но recipient можно заменить фронтраном.',
+        chooseGiver: 'Выберите раздатчик токенов',
+        random: 'Случайный',
+        disconnect: 'Отключиться',
+        miningStart: 'Начать Майнинг',
+        miningStop: 'Остановить Майнинг',
+        alertSeed: 'Введите Сид-Фразу',
+        proofText: 'Сид-фраза используется локально в вашем браузере. Она не будет никуда отправлена.',
+        proofLink: 'Проверьте исходник на GitHub: <a href="https://github.com/gru2007/web-miner" target="_blank">gru2007/web-miner</a>.',
+        logs: 'Логи о процессе майнинга доступны в консоли браузера.',
+        needTon: 'Вам нужно хотя бы 0.2 TON на кошельке для начала майнинга.',
+    },
+    en: {
+        addressLabel: 'Your address:',
+        title: '$ZKGRM Mining',
+        description: 'Test $ZKGRM mining on TestNet.',
+        placeholderSeed: 'Enter seed phrase in TestNet',
+        buttonConnect: 'Start Mining',
+        secureLabel: 'Secure Min2',
+        secureDescription: 'Proof is bound to your reward address. Mempool copy cannot steal it.',
+        legacyLabel: 'Legacy Mine',
+        legacyDescription: 'Compatible with old $GRAM-style opcode, but recipient can be front-run.',
+        chooseGiver: 'Choose token giver',
+        random: 'Random',
+        disconnect: 'Disconnect',
+        miningStart: 'Start Mining',
+        miningStop: 'Stop Mining',
+        alertSeed: 'Enter seed phrase',
+        proofText: 'Seed phrase is used locally in your browser and is not sent anywhere.',
+        proofLink: 'See source on GitHub: <a href="https://github.com/gru2007/web-miner" target="_blank">gru2007/web-miner</a>.',
+        logs: 'Mining logs are available in your browser console.',
+        needTon: 'You need at least 0.2 TON in your wallet to start mining.',
+    },
+};
+const t = i18n[pageLang];
+
 const MINE_OP_LEGACY = 0x4d696e65;
 const MINE_OP_SECURE = 0x4d696e32;
 
@@ -36,7 +83,7 @@ async function initializeWallet(seedphrase) {
     console.log('Wallet address:', userWallet.address.toString());
 
     // set address to view
-    document.getElementById('address').innerHTML = `Ваш адрес: <a href="https://testnet.tonscan.org/address/${userWallet.address.toString()}" 
+    document.getElementById('address').innerHTML = `${t.addressLabel} <a href="https://testnet.tonscan.org/address/${userWallet.address.toString()}" 
                 target="_blank">${wrapAddress(userWallet.address)}</a>`;
 
 }
@@ -206,17 +253,19 @@ window.addEventListener('load', async function () {
 
 
             document.getElementById('content').innerHTML = `
-                <p id="address">Ваш адрес: ...</p>
-                <p class="small"><b>Secure Min2 / Безопасный:</b> proof привязан к получателю. Mempool copy не может украсть награду.</p>
-                <p class="small"><b>Legacy Mine / Старый:</b> совместим со старым $GRAM-style opcode, но recipient можно заменить фронтраном.</p>
+                <p id="address">${t.addressLabel} ...</p>
+                <p class="small"><b>${t.secureLabel}:</b> ${t.secureDescription}</p>
+                <p class="small"><b>${t.legacyLabel}:</b> ${t.legacyDescription}</p>
                 <select id="miningMode">
-                    <option value="secure" selected>Secure Min2 / Безопасный</option>
-                    <option value="legacy">Legacy Mine / Старый небезопасный</option>
+                    <option value="secure" selected>${t.secureLabel}</option>
+                    <option value="legacy">${t.legacyLabel}</option>
                 </select>
                 <select id="extraSmallGivers"></select>
                 <!--input type="text" id="jettonGiverAddress" value="${storedJettonGiverAddress}"-->
-                <button id="miningButton">Начать Майнинг</button>
-                <button id="disconnectButton">Отключиться</button>
+                <button id="miningButton">${t.miningStart}</button>
+                <button id="disconnectButton">${t.disconnect}</button>
+                <p class="small">${t.proofLink}</p>
+                <p class="small">${t.logs}</p>
             `;
             const select = document.getElementById('extraSmallGivers');
             const defaultOption = document.createElement('option');
@@ -272,9 +321,9 @@ window.addEventListener('load', async function () {
             // })
         } else {
             document.getElementById('content').innerHTML = `
-                <input type="text" id="seedphrase" placeholder="Введите Сид-Фразу">
+                <input type="text" id="seedphrase" placeholder="${t.placeholderSeed}">
                 <!--input type="text" id="jettonGiverAddress" placeholder="Enter JettonGiver Address"-->
-                <button id="connectButton">Начать Майнинг</button>
+                <button id="connectButton">${t.buttonConnect}</button>
             `;
             document
                 .getElementById('connectButton')
@@ -297,7 +346,7 @@ window.addEventListener('load', async function () {
                         document.getElementById('miningButton').click();
                     } else {
                         alert(
-                            'Введите Сид-Фразу'
+                            t.alertSeed
                         );
                     }
                 });
@@ -306,7 +355,7 @@ window.addEventListener('load', async function () {
 
     function updateMiningButton() {
         var miningButton = document.getElementById('miningButton');
-        miningButton.textContent = isMining ? 'Остановить Майнинг' : 'Начать Майнинг';
+        miningButton.textContent = isMining ? t.miningStop : t.miningStart;
     }
 
     async function startMining() {

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>$ZKGRM Майнинг</title>
+    <link rel="stylesheet" type="text/css" href="styles.css"/>
+</head>
+<body>
+<div id="app">
+    <div id="header">
+        <h3>$ZKGRM Майнинг</h3>
+        <p>Здесь вы можете протестировать майнинг $ZKGRM в TestNet.</p>
+    </div>
+    <div id="content">
+        <input type="text" id="seedphrase" placeholder="Введите Сид-Фразу в TestNet"/>
+        <button id="connectButton">Начать Майнинг</button>
+    </div>
+    <div id="footer">
+        <p class="small">Сид-фраза используется локально в вашем браузере. Она не будет никуда отправлена.</p>
+        <p class="small">Проверьте исходник на GitHub: <a href="https://github.com/gru2007/web-miner" target="_blank">gru2007/web-miner</a>.</p>
+        <p class="small">Майнер работает с V4 кошельками в TestNet.</p>
+        <p class="small">Вам нужно хотя бы 0.2 TON на кошельке для начала майнинга.</p>
+        <br>
+        <p class="small">Логи о процессе майнинга доступны в консоли браузера.</p>
+    </div>
+</div>
+<script src="build/main.js"></script>
+<script src="JettonGiver.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
