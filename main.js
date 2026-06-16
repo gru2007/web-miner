@@ -8,6 +8,15 @@ const wrapAddress = (address) => {
     return `${addressString.slice(0, 6)}...${addressString.slice(-6)}`;
 }
 
+const MINE_OP_LEGACY = 0x4d696e65;
+const MINE_OP_SECURE = 0x4d696e32;
+
+const bufferToBigInt = (buffer) => BigInt(`0x${buffer.toString('hex')}`);
+
+const addressCellHash = (address) => bufferToBigInt(
+    tonton.beginCell().storeAddress(address).endCell().hash()
+);
+
 async function initializeWallet(seedphrase) {
     // Splitting the seedphrase into an array of words
     let seedWords = seedphrase.split(' ');
@@ -43,6 +52,8 @@ const extraSmallGivers = [
     'kQBXxdauA2wWf07mkA-cQzL7msq6M43lbXvz0ojoYvMptp0C'
 ]
 
+const isKnownGiver = (address) => extraSmallGivers.includes(address);
+
 const getRandomGiver = () => {
     return extraSmallGivers[Math.floor(Math.random() * extraSmallGivers.length)];
 }
@@ -52,7 +63,11 @@ const getGiverToMine = () => {
     if (value === 'random') {
         return getRandomGiver();
     }
-    return value;
+    if (isKnownGiver(value)) {
+        return value;
+    }
+    const stored = localStorage.getItem('jettonGiverAddress');
+    return isKnownGiver(stored) ? stored : getRandomGiver();
 }
 
 const updateGiver = () => {
@@ -88,20 +103,44 @@ window.addEventListener('load', async function () {
             return false;
         }
         try {
-            const [seed, powComplexity] = await jettonGiver.getPowParameters();
+            const [seed, powComplexity, rewardAmount, targetDelta] = await jettonGiver.getPowParameters();
             currentSeed = seed;
             currentPowComplexity = powComplexity;
             console.log(
                 'Updated pow parameters:',
                 currentSeed,
-                currentPowComplexity
+                currentPowComplexity,
+                'reward:',
+                rewardAmount,
+                'target delta:',
+                targetDelta
             );
         } catch (error) {
             console.error('Error fetching pow parameters:', error);
         }
     }
 
-    async function simpleMine(myAddress) {
+    function createMineBody({ expire, nonce, seed, recipient, mode }) {
+        const isSecure = mode === 'secure';
+        const whom = isSecure ? addressCellHash(recipient) : bufferToBigInt(userWallet.address.hash);
+        const body = tonton
+            .beginCell()
+            .storeUint(isSecure ? MINE_OP_SECURE : MINE_OP_LEGACY, 32)
+            .storeInt(userWallet.address.workChain * 4, 8)
+            .storeUint(expire, 32)
+            .storeUint(whom, 256)
+            .storeUint(nonce, 256)
+            .storeUint(seed, 128)
+            .storeUint(nonce, 256);
+
+        if (recipient) {
+            body.storeRef(tonton.beginCell().storeAddress(recipient).endCell());
+        }
+
+        return body.endCell();
+    }
+
+    async function simpleMine(myAddress, recipient, mode) {
         let startMiningTime = Date.now()
         let lastSentLogTime = 0
 
@@ -110,21 +149,14 @@ window.addEventListener('load', async function () {
         );
         const expire = Math.floor(Date.now() / 1000) + 900;
 
-        const b = tonton
-            .beginCell()
-            .storeUint(0x4d696e65, 32) // Magic number for 'Mine'
-            .storeInt(myAddress.workChain * 4, 8)
-            .storeUint(expire, 32)
-            .storeBuffer(myAddress.hash);
-
         while (isMining) {
-            const cell = tonton
-                .beginCell()
-                .storeBuilder(b)
-                .storeUint(nonce, 256)
-                .storeUint(currentSeed, 128)
-                .storeUint(nonce, 256)
-                .endCell();
+            const cell = createMineBody({
+                expire,
+                nonce,
+                seed: currentSeed,
+                recipient: mode === 'secure' ? recipient : null,
+                mode,
+            });
             const hash = cell.hash();
             const hashNumber = BigInt(`0x${hash.toString('hex')}`);
             const randomNumber = Math.floor(Math.random() * 700) + 300;
@@ -147,7 +179,7 @@ window.addEventListener('load', async function () {
                     currentPowComplexity.toString(),
                     cell.toString()
                 );
-                return { cell, nonce }; // Return the successful cell and nonce
+                return { expire, nonce, seed: currentSeed };
             }
             nonce++;
 
@@ -165,12 +197,22 @@ window.addEventListener('load', async function () {
         var storedJettonGiverAddress =
             localStorage.getItem('jettonGiverAddress');
         if (storedSeedphrase && storedJettonGiverAddress) {
+            if (!isKnownGiver(storedJettonGiverAddress)) {
+                storedJettonGiverAddress = getRandomGiver();
+                localStorage.setItem('jettonGiverAddress', storedJettonGiverAddress);
+            }
             initializeWallet(storedSeedphrase);
             initializeJettonGiver(storedJettonGiverAddress); // Initialize JettonGiver with stored address
 
 
             document.getElementById('content').innerHTML = `
                 <p id="address">Ваш адрес: ...</p>
+                <p class="small"><b>Secure Min2 / Безопасный:</b> proof привязан к получателю. Mempool copy не может украсть награду.</p>
+                <p class="small"><b>Legacy Mine / Старый:</b> совместим со старым $GRAM-style opcode, но recipient можно заменить фронтраном.</p>
+                <select id="miningMode">
+                    <option value="secure" selected>Secure Min2 / Безопасный</option>
+                    <option value="legacy">Legacy Mine / Старый небезопасный</option>
+                </select>
                 <select id="extraSmallGivers"></select>
                 <!--input type="text" id="jettonGiverAddress" value="${storedJettonGiverAddress}"-->
                 <button id="miningButton">Начать Майнинг</button>
@@ -191,6 +233,7 @@ window.addEventListener('load', async function () {
                 const option = document.createElement('option');
                 option.value = address;
                 option.text = address;
+                option.selected = address === storedJettonGiverAddress;
                 select.appendChild(option);
             });
             // change giver when select
@@ -278,9 +321,11 @@ window.addEventListener('load', async function () {
                 continue;
             }
 
-            const result = await simpleMine(userWallet.address);
+            const mode = document.getElementById('miningMode')?.value || 'secure';
+            const result = await simpleMine(userWallet.address, userWallet.address, mode);
             if (result) {
-                const { cell, nonce } = result;
+                const { expire, nonce, seed } = result;
+                const cell = createMineBody({ expire, nonce, seed, recipient: userWallet.address, mode });
                 console.log(`Mining successful: Nonce - ${nonce}`, cell);
                 try {
                     await jettonGiver.sendMine(
