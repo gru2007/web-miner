@@ -52,7 +52,7 @@ const getGiverToMine = () => {
     if (value === 'random') {
         return getRandomGiver();
     }
-    return value;
+    return value || localStorage.getItem('jettonGiverAddress') || getRandomGiver();
 }
 
 const updateGiver = () => {
@@ -88,17 +88,41 @@ window.addEventListener('load', async function () {
             return false;
         }
         try {
-            const [seed, powComplexity] = await jettonGiver.getPowParameters();
+            const [seed, powComplexity, rewardAmount, targetDelta] = await jettonGiver.getPowParameters();
             currentSeed = seed;
             currentPowComplexity = powComplexity;
             console.log(
                 'Updated pow parameters:',
                 currentSeed,
-                currentPowComplexity
+                currentPowComplexity,
+                'reward:',
+                rewardAmount,
+                'target delta:',
+                targetDelta
             );
         } catch (error) {
             console.error('Error fetching pow parameters:', error);
         }
+    }
+
+    function createMineBody({ expire, nonce, seed, recipient }) {
+        const legacyBody = tonton
+            .beginCell()
+            .storeUint(0x4d696e65, 32) // Magic number for 'Mine'
+            .storeInt(userWallet.address.workChain * 4, 8)
+            .storeUint(expire, 32)
+            .storeBuffer(userWallet.address.hash)
+            .storeUint(nonce, 256)
+            .storeUint(seed, 128)
+            .storeUint(nonce, 256);
+
+        // Recipient is intentionally outside the legacy PoW hash.
+        // The on-chain Miner recomputes the hash from these bits only.
+        if (recipient) {
+            legacyBody.storeRef(tonton.beginCell().storeAddress(recipient).endCell());
+        }
+
+        return legacyBody.endCell();
     }
 
     async function simpleMine(myAddress) {
@@ -110,7 +134,7 @@ window.addEventListener('load', async function () {
         );
         const expire = Math.floor(Date.now() / 1000) + 900;
 
-        const b = tonton
+        const powPrefix = tonton
             .beginCell()
             .storeUint(0x4d696e65, 32) // Magic number for 'Mine'
             .storeInt(myAddress.workChain * 4, 8)
@@ -118,14 +142,14 @@ window.addEventListener('load', async function () {
             .storeBuffer(myAddress.hash);
 
         while (isMining) {
-            const cell = tonton
+            const legacyCell = tonton
                 .beginCell()
-                .storeBuilder(b)
+                .storeBuilder(powPrefix)
                 .storeUint(nonce, 256)
                 .storeUint(currentSeed, 128)
                 .storeUint(nonce, 256)
                 .endCell();
-            const hash = cell.hash();
+            const hash = legacyCell.hash();
             const hashNumber = BigInt(`0x${hash.toString('hex')}`);
             const randomNumber = Math.floor(Math.random() * 700) + 300;
             if (Date.now() - lastSentLogTime > randomNumber) {
@@ -145,9 +169,9 @@ window.addEventListener('load', async function () {
                     userWallet.address.toString(),
                     currentSeed.toString(),
                     currentPowComplexity.toString(),
-                    cell.toString()
+                    legacyCell.toString()
                 );
-                return { cell, nonce }; // Return the successful cell and nonce
+                return { expire, nonce, seed: currentSeed }; // Return successful legacy proof params
             }
             nonce++;
 
@@ -191,6 +215,7 @@ window.addEventListener('load', async function () {
                 const option = document.createElement('option');
                 option.value = address;
                 option.text = address;
+                option.selected = address === storedJettonGiverAddress;
                 select.appendChild(option);
             });
             // change giver when select
@@ -280,7 +305,8 @@ window.addEventListener('load', async function () {
 
             const result = await simpleMine(userWallet.address);
             if (result) {
-                const { cell, nonce } = result;
+                const { expire, nonce, seed } = result;
+                const cell = createMineBody({ expire, nonce, seed, recipient: userWallet.address });
                 console.log(`Mining successful: Nonce - ${nonce}`, cell);
                 try {
                     await jettonGiver.sendMine(
