@@ -330,7 +330,7 @@ window.addEventListener('load', async function () {
                 try {
                     await jettonGiver.sendMine(
                         userSender,
-                        tonton.toNano('0.19'),
+                        tonton.toNano('0.29'),
                         cell
                     );
                     lastSentSeed = currentSeed;
